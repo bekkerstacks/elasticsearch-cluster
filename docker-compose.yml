@@ -1,0 +1,86 @@
+# https://www.elastic.co/guide/en/elasticsearch/reference/6.3/modules-node.html#master-node
+version: "3.7"
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.5.1
+    # image: docker.elastic.co/elasticsearch/elasticsearch-oss:${ELASTIC_VERSION:-6.7.0}
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      # - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:-changeme}
+      - "discovery.zen.minimum_master_nodes=2"
+      - "discovery.zen.ping.unicast.hosts=master"
+      - "node.master=false"
+      - "node.data=false"
+      - "node.ingest=false"
+      - "xpack.security.enabled=false"
+      - "xpack.monitoring.enabled=false"
+      - "xpack.watcher.enabled=false"
+      - "xpack.ml.enabled=false"
+      - "http.cors.enabled=true"
+      - "http.cors.allow-origin=*"
+      - "node.name=es-coordinating.{{.Task.ID}}.{{.Node.Hostname}}"
+    networks:
+       - esnet
+    ports:
+      - target: 9200
+        published: 9200
+        protocol: tcp
+        mode: host
+    deploy:
+      endpoint_mode: dnsrr
+      mode: 'global'
+
+  master:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.5.1
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.minimum_master_nodes=2"
+      - "discovery.zen.ping.unicast.hosts=master"
+      - "node.master=true"
+      - "node.data=false"
+      - "node.ingest=false"
+      - "xpack.security.enabled=false"
+      - "xpack.monitoring.enabled=false"
+      - "xpack.watcher.enabled=false"
+      - "xpack.ml.enabled=false"
+      - "http.cors.enabled=true"
+      - "http.cors.allow-origin=*"
+      - "node.name=es-master.{{.Task.ID}}.{{.Node.Hostname}}"
+    networks:
+       - esnet
+    deploy:
+      endpoint_mode: dnsrr
+      mode: 'replicated'
+      replicas: 3
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  data:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.5.1
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.minimum_master_nodes=2"
+      - "discovery.zen.ping.unicast.hosts=master"
+      - "node.master=false"
+      - "node.data=true"
+      - "node.ingest=true"
+      - "xpack.security.enabled=false"
+      - "xpack.monitoring.enabled=false"
+      - "xpack.watcher.enabled=false"
+      - "xpack.ml.enabled=false"
+      - "http.cors.enabled=true"
+      - "http.cors.allow-origin=*"
+      - "node.name=es-data.{{.Task.ID}}.{{.Node.Hostname}}"
+    networks:
+       - esnet
+    deploy:
+      endpoint_mode: dnsrr
+      mode: 'replicated'
+      replicas: 1
+
+networks:
+  esnet:
+    driver: overlay
