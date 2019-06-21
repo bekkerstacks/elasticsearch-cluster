@@ -18,7 +18,7 @@ services:
       - "http.cors.allow-origin=*"
       - "node.name=es-coordinating.{{.Task.Slot}}.{{.Node.Hostname}}"
     networks:
-       - esnet
+       - private
     ports:
       - target: 9200
         published: 9200
@@ -45,7 +45,7 @@ services:
       - "http.cors.allow-origin=*"
       - "node.name=es-master.{{.Task.Slot}}.{{.Node.Hostname}}"
     networks:
-       - esnet
+       - private
     deploy:
       endpoint_mode: dnsrr
       mode: 'replicated'
@@ -68,12 +68,12 @@ services:
       - "http.cors.allow-origin=*"
       - "node.name=es-data.{{.Task.Slot}}.{{.Node.Hostname}}"
     networks:
-       - esnet
+       - private
     deploy:
       endpoint_mode: dnsrr
       mode: 'replicated'
       replicas: 1
 
 networks:
-  esnet:
+  private:
     driver: overlay
